@@ -119,7 +119,18 @@ async function startServer() {
         msg.to === user ||
         msg.type === "status"
     );
-    res.send(userMessages.slice(-limit));
+    try {
+      if(limit <= 0 || typeof limit === 'string'){
+        return res.status(422).send("Limite inválido");
+      }
+      if (limit !== null) {
+        res.send(userMessages.slice(-limit));
+      }else{
+        res.send(userMessages);
+      }
+    } catch (error) {
+      console.log(error);
+    }
   });
 
   app.get("/status", async (req, res) => {
