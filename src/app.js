@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { MongoClient } from "mongodb";
+import { MongoClient, ServerApiVersion } from "mongodb";
 import express from "express";
 import cors from "cors";
 
@@ -20,8 +20,30 @@ async function startServer() {
     console.log(err.message);
   }
 
+  
+  app.post("/participants" , async (req, res) => {
+    const {name} = req.body
+
+
+    try {
+      await db.collection("participants").insertOne({ name, lastStatus:Date.now() })
+      await db.collection("messages").insertOne({from: name, to: 'Todos', text: 'entra na sala...', type: 'status', time: 'HH:MM:SS'})
+      res.send("ok")
+    }
+
+    catch (err) {
+      console.log(err)
+      res.status(500).send("Deu algo errado no servidor")
+    }
+
+  }) 
+
+
+
+
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
   });
 }
+
 startServer();
