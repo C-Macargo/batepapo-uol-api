@@ -20,6 +20,12 @@ const participantSchema = Joi.object({
   name: Joi.string().required(),
 });
 
+const messageSchema = Joi.object({
+  to: Joi.string().required(),
+  text: Joi.string().required(),
+  type: Joi.string().valid("private_message", "message").required(),
+});
+
 async function startServer() {
   try {
     await mongoClient.connect();
@@ -30,11 +36,11 @@ async function startServer() {
 
   app.post("/participants", async (req, res) => {
     const { name } = req.body;
-    const ParticiopantValidation = participantSchema.validate({ name });
+    const particiopantValidation = participantSchema.validate({ name });
     const date = dayjs().format("HH:mm:ss");
     const lastStatus = Date.now();
 
-    if (ParticiopantValidation.error) {
+    if (particiopantValidation.error) {
       return res.status(422).send("Nome do participante inválido");
     }
 
@@ -66,6 +72,18 @@ async function startServer() {
     const { to, text, type } = req.body;
     const from = req.headers.user;
     const time = dayjs(Date.now()).format("hh:mm:ss");
+    const messageValidation = messageSchema.validate({ to, text, type });
+
+    if (messageValidation.error) {
+      return res.status(422).send("Mensagem inválida");
+    }
+
+    const checkUser = await db
+      .collection("participants")
+      .countDocuments({ name: from });
+    if (checkUser === 0) {
+      return res.status(422).send("Tente novamente");
+    }
 
     try {
       await db.collection("messages").insertOne({
