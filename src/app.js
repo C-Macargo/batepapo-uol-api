@@ -119,7 +119,7 @@ async function startServer() {
         msg.to === user ||
         msg.type === "status"
     );
-    res.send(userMessages.slice(-limit));
+    res.send(userMessages.slice(-limit));;
   });
 
   app.listen(PORT, () => {
