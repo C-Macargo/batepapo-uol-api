@@ -36,11 +36,11 @@ async function startServer() {
 
   app.post("/participants", async (req, res) => {
     const { name } = req.body;
-    const particiopantValidation = participantSchema.validate({ name });
+    const participantValidation = participantSchema.validate({ name });
     const date = dayjs().format("hh:mm:ss");
     const lastStatus = Date.now();
 
-    if (particiopantValidation.error) {
+    if (participantValidation.error) {
       return res.status(422).send("Nome do participante inválido");
     }
 
@@ -109,7 +109,8 @@ async function startServer() {
 
   app.get("/messages", async (req, res) => {
     const { user } = req.headers;
-    const limit = req.query.limit;
+    const limit = Number(req.query.limit);
+    console.log(limit)
     const messagesList = await db.collection("messages").find().toArray();
     let userMessages = messagesList.filter(
       (msg) =>
@@ -121,7 +122,7 @@ async function startServer() {
     );
 
     try {
-      if (limit <= 0 || Number.isInteger(limit)) {
+      if (limit < 0 || isNaN(limit)) {
         res.status(422).send("Limite inválido");
       }
       if (limit) {
@@ -130,7 +131,7 @@ async function startServer() {
         res.send(userMessages);
       }
     } catch (error) {
-      console.log(error);
+      console.log(error)
     }
   });
 
@@ -138,7 +139,6 @@ async function startServer() {
     const time = Date.now();
     const { user } = req.headers;
     const connectedUser = await db.collection("participants").findOne({ name: user });
-    console.log(connectedUser)
     try {
       if (connectedUser) {
         res.status(200).send("Usuário está na lista");
@@ -151,6 +151,17 @@ async function startServer() {
       console.log(error);
     }
   });
+  
+  setInterval(
+  async function removeInactiveUsers() {
+    const currentTime = Date.now();
+    const inactiveUsers = await db.collection("participants").find({ lastStatus: { $lt: currentTime - 15000 } }).toArray();
+    if (inactiveUsers.length !== 0) {
+      await db.collection("participants").deleteMany({ name: { $in: inactiveUsers.map((user) => user.name) } });
+    }
+  }
+  ,15000)
+
 
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
