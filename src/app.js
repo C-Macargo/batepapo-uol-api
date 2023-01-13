@@ -45,12 +45,13 @@ async function startServer() {
     }
 
     try {
-
-      const checkExistingParticipant = await db.collection("participants").findOne({name: name});
+      const checkExistingParticipant = await db
+        .collection("participants")
+        .findOne({ name: name });
       if (checkExistingParticipant) {
         return res.status(409).send("Participante já existe");
-    }
-      
+      }
+
       await db.collection("participants").insertOne({ name, lastStatus });
       await db.collection("messages").insertOne({
         from: name,
@@ -64,7 +65,6 @@ async function startServer() {
       console.log(error);
       res.status(422).send("Deu algo errado no servidor");
     }
-
   });
 
   app.get("/participants", async (_, res) => {
@@ -108,12 +108,19 @@ async function startServer() {
   });
 
   app.get("/messages", async (req, res) => {
-    const { user } = req.headers
+    const { user } = req.headers;
     const limit = parseInt(req.query.limit);
-    const messagesList = await db.collection("messages").find().toArray();
-    let userMessages = messagesList.filter(msg => msg.user === user || msg.to === "Todos" );
+    const messagesList = await db.collection("messages").find().limit(limit).toArray();
+    let userMessages = messagesList.filter(
+      (msg) =>
+        msg.user === user ||
+        msg.to === "Todos" ||
+        msg.from === user ||
+        msg.to === user ||
+        msg.type === "status"
+    );
     res.send(userMessages);
-  });
+});
 
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
