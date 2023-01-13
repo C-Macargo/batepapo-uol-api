@@ -13,6 +13,12 @@ app.use(cors());
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
 const db = mongoClient.db();
+const participants = db.collection("participants");
+const messages = db.collection("messages");
+
+const participantSchema = Joi.object({
+  name: Joi.string().required(),
+});
 
 async function startServer() {
   try {
@@ -21,10 +27,6 @@ async function startServer() {
   } catch (err) {
     console.log(err.message);
   }
-
-  const participantSchema = Joi.object({
-    name: Joi.string().required(),
-  });
 
   app.post("/participants", async (req, res) => {
     const { name } = req.body;
@@ -60,9 +62,25 @@ async function startServer() {
     res.send(participantsList);
   });
 
+  app.post("/message", async (req, res) => {
+    const { to, text, type } = req.body;
+    const from = req.headers.user;
+    const time = dayjs(Date.now()).format("hh:mm:ss");
 
-
-
+    try {
+      await db.collection("messages").insertOne({
+        to,
+        text,
+        type,
+        from,
+        time,
+      });
+      res.status(201).send("Mensagem enviada");
+    } catch (error) {
+      console.log(error);
+      res.status(422).send("Deu algo errado no servidor");
+    }
+  });
 
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
