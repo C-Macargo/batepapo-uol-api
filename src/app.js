@@ -119,7 +119,24 @@ async function startServer() {
         msg.to === user ||
         msg.type === "status"
     );
-    res.send(userMessages.slice(-limit));;
+    res.send(userMessages.slice(-limit));
+  });
+
+  app.get("/status", async (req, res) => {
+    const { user } = req.headers;
+    const userList = await db.collection("participants").find().toArray();
+    const connectedUser = userList.find((user) => userList.name === user);
+
+    try {
+      if (connectedUser) {
+        res.status(200).send("Usuário está na lista");
+      }
+      if (!connectedUser) {
+        res.status(400).send("Usuário está não na lista");
+      }
+    } catch (error) {
+      console.log(error);
+    }
   });
 
   app.listen(PORT, () => {
