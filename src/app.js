@@ -110,7 +110,7 @@ async function startServer() {
   app.get("/messages", async (req, res) => {
     const { user } = req.headers;
     const limit = parseInt(req.query.limit);
-    const messagesList = await db.collection("messages").find().limit(limit).toArray();
+    const messagesList = await db.collection("messages").find().toArray();
     let userMessages = messagesList.filter(
       (msg) =>
         msg.user === user ||
@@ -119,8 +119,8 @@ async function startServer() {
         msg.to === user ||
         msg.type === "status"
     );
-    res.send(userMessages);
-});
+    res.send(userMessages.slice(-limit));
+  });
 
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
