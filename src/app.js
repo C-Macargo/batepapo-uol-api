@@ -52,6 +52,18 @@ async function startServer() {
     }
   });
 
+  app.get("/participants", async (_, res) => {
+    const participantsList = await db
+      .collection("participants")
+      .find()
+      .toArray();
+    res.send(participantsList);
+  });
+
+
+
+
+
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
   });
