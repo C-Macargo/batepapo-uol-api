@@ -37,7 +37,7 @@ async function startServer() {
   app.post("/participants", async (req, res) => {
     const { name } = req.body;
     const particiopantValidation = participantSchema.validate({ name });
-    const date = dayjs().format("HH:mm:ss");
+    const date = dayjs().format("hh:mm:ss");
     const lastStatus = Date.now();
 
     if (particiopantValidation.error) {
@@ -124,9 +124,9 @@ async function startServer() {
         return res.status(422).send("Limite inválido");
       }
       if (limit !== null) {
-        res.send(userMessages.slice(-limit));
-      }else{
-        res.send(userMessages);
+        res.send(userMessages.slice(-limit)).reverse;}
+      if (limit === null){
+        res.send(userMessages.reverse())
       }
     } catch (error) {
       console.log(error);
@@ -134,9 +134,9 @@ async function startServer() {
   });
 
   app.get("/status", async (req, res) => {
-    const { user } = req.headers;
+    const { user }  = req.headers;
     const userList = await db.collection("participants").find().toArray();
-    const connectedUser = userList.find((user) => userList.name === user);
+    const connectedUser = userList.find((u) => u.name === user);
 
     try {
       if (connectedUser) {
