@@ -3,6 +3,7 @@ import { MongoClient, ServerApiVersion } from "mongodb";
 import express from "express";
 import cors from "cors";
 import dayjs from "dayjs";
+import Joi from "joi";
 
 dotenv.config();
 const PORT = 5000;
@@ -21,10 +22,19 @@ async function startServer() {
     console.log(err.message);
   }
 
+  const participantSchema = Joi.object({
+    name: Joi.string().required(),
+  });
+
   app.post("/participants", async (req, res) => {
     const { name } = req.body;
+    const ParticiopantValidation = participantSchema.validate({ name });
     const date = dayjs().format("HH:mm:ss");
     const lastStatus = Date.now();
+
+    if (ParticiopantValidation.error) {
+      return res.status(422).send("Nome do participante inválido");
+    }
 
     try {
       await db.collection("participants").insertOne({ name, lastStatus });
@@ -35,10 +45,10 @@ async function startServer() {
         type: "status",
         time: date,
       });
-      res.status(201);
-    } catch (err) {
-      console.log(err);
-      res.status(500).send("Deu algo errado no servidor");
+      res.status(201).send("Participante Criado");
+    } catch (error) {
+      console.log(error);
+      res.status(422).send("Deu algo errado no servidor");
     }
   });
 
