@@ -109,7 +109,7 @@ async function startServer() {
 
   app.get("/messages", async (req, res) => {
     const { user } = req.headers;
-    const limit = parseInt(req.query.limit);
+    const limit = req.query.limit;
     const messagesList = await db.collection("messages").find().toArray();
     let userMessages = messagesList.filter(
       (msg) =>
@@ -119,31 +119,33 @@ async function startServer() {
         msg.to === user ||
         msg.type === "status"
     );
+
     try {
-      if(limit <= 0 || typeof limit === 'string'){
-        return res.status(422).send("Limite inválido");
+      if (limit <= 0 || Number.isInteger(limit)) {
+        res.status(422).send("Limite inválido");
       }
-      if (limit !== null) {
-        res.send(userMessages.slice(-limit)).reverse;}
-      if (limit === null){
-        res.send(userMessages.reverse())
+      if (limit) {
+        res.send(userMessages.slice(-limit));
+      } else {
+        res.send(userMessages);
       }
     } catch (error) {
       console.log(error);
     }
   });
 
-  app.get("/status", async (req, res) => {
-    const { user }  = req.headers;
-    const userList = await db.collection("participants").find().toArray();
-    const connectedUser = userList.find((u) => u.name === user);
-
+  app.post("/status", async (req, res) => {
+    const time = Date.now();
+    const { user } = req.headers;
+    const connectedUser = await db.collection("participants").findOne({ name: user });
+    console.log(connectedUser)
     try {
       if (connectedUser) {
         res.status(200).send("Usuário está na lista");
+        await db.collection("participants").updateOne({ name: user }, { $set: { lastStatus: time } });
       }
       if (!connectedUser) {
-        res.status(400).send("Usuário está não na lista");
+        res.status(404).send("Usuário está não na lista");
       }
     } catch (error) {
       console.log(error);
