@@ -45,6 +45,12 @@ async function startServer() {
     }
 
     try {
+
+      const checkExistingParticipant = await db.collection("participants").findOne({name: name});
+      if (checkExistingParticipant) {
+        return res.status(409).send("Participante já existe");
+    }
+      
       await db.collection("participants").insertOne({ name, lastStatus });
       await db.collection("messages").insertOne({
         from: name,
@@ -59,7 +65,6 @@ async function startServer() {
       res.status(422).send("Deu algo errado no servidor");
     }
 
-    res.sendStatus(201)
   });
 
   app.get("/participants", async (_, res) => {
@@ -70,7 +75,7 @@ async function startServer() {
     res.send(participantsList);
   });
 
-  app.post("/message", async (req, res) => {
+  app.post("/messages", async (req, res) => {
     const { to, text, type } = req.body;
     const from = req.headers.user;
     const time = dayjs(Date.now()).format("hh:mm:ss");
