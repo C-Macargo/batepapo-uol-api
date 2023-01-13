@@ -107,9 +107,12 @@ async function startServer() {
     }
   });
 
-  app.get("/messages", async (_, res) => {
+  app.get("/messages", async (req, res) => {
+    const { user } = req.headers
+    const limit = parseInt(req.query.limit);
     const messagesList = await db.collection("messages").find().toArray();
-    res.send(messagesList);
+    let userMessages = messagesList.filter(msg => msg.user === user || msg.to === "Todos" );
+    res.send(userMessages);
   });
 
   app.listen(PORT, () => {
