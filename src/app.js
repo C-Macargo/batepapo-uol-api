@@ -58,6 +58,8 @@ async function startServer() {
       console.log(error);
       res.status(422).send("Deu algo errado no servidor");
     }
+
+    res.sendStatus(201)
   });
 
   app.get("/participants", async (_, res) => {
@@ -101,10 +103,7 @@ async function startServer() {
   });
 
   app.get("/messages", async (_, res) => {
-    const messagesList = await db
-      .collection("messages")
-      .find()
-      .toArray();
+    const messagesList = await db.collection("messages").find().toArray();
     res.send(messagesList);
   });
 
