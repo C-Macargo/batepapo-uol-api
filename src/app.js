@@ -100,6 +100,14 @@ async function startServer() {
     }
   });
 
+  app.get("/messages", async (_, res) => {
+    const messagesList = await db
+      .collection("messages")
+      .find()
+      .toArray();
+    res.send(messagesList);
+  });
+
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
   });
