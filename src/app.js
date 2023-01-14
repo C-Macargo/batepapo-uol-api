@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { MongoClient, ServerApiVersion } from "mongodb";
+import { MongoClient } from "mongodb";
 import express from "express";
 import cors from "cors";
 import dayjs from "dayjs";
@@ -109,8 +109,7 @@ async function startServer() {
 
   app.get("/messages", async (req, res) => {
     const { user } = req.headers;
-    const limit = Number(req.query.limit);
-    console.log(limit)
+    const { query } = req;
     const messagesList = await db.collection("messages").find().toArray();
     let userMessages = messagesList.filter(
       (msg) =>
@@ -122,27 +121,36 @@ async function startServer() {
     );
 
     try {
-      if (limit < 0 || isNaN(limit)) {
+      if (
+        query &&
+        query.limit &&
+        (Number(query.limit) < 1 || isNaN(Number(query.limit)))
+      ) {
         res.status(422).send("Limite inválido");
+        return;
       }
-      if (limit) {
-        res.send(userMessages.slice(-limit));
+      if (query.limit) {
+        res.status(200).send(userMessages.splice(-query.limit).reverse());
       } else {
-        res.send(userMessages);
+        res.status(200).send(userMessages);
       }
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
   });
 
   app.post("/status", async (req, res) => {
     const time = Date.now();
     const { user } = req.headers;
-    const connectedUser = await db.collection("participants").findOne({ name: user });
+    const connectedUser = await db
+      .collection("participants")
+      .findOne({ name: user });
     try {
       if (connectedUser) {
-        res.status(200).send("Usuário está na lista");
-        await db.collection("participants").updateOne({ name: user }, { $set: { lastStatus: time } });
+        await db
+          .collection("participants")
+          .updateOne({ name: user }, { $set: { lastStatus: time } });
+        return res.status(200).send("Usuário está na lista");
       }
       if (!connectedUser) {
         res.status(404).send("Usuário está não na lista");
@@ -151,17 +159,27 @@ async function startServer() {
       console.log(error);
     }
   });
-  
-  setInterval(
-  async function removeInactiveUsers() {
-    const currentTime = Date.now();
-    const inactiveUsers = await db.collection("participants").find({ lastStatus: { $lt: currentTime - 15000 } }).toArray();
-    if (inactiveUsers.length !== 0) {
-      await db.collection("participants").deleteMany({ name: { $in: inactiveUsers.map((user) => user.name) } });
-    }
-  }
-  ,15000)
 
+  setInterval(async function removeInactiveUsers() {
+    const currentTime = Date.now();
+    const time = dayjs(Date.now()).format("hh:mm:ss");
+    const inactiveUsers = await db
+      .collection("participants")
+      .find({ lastStatus: { $lt: currentTime - 15000 } })
+      .toArray();
+    if (inactiveUsers.length !== 0) {
+      inactiveUsers.forEach(async (user) => {
+        await db.collection("participants").deleteOne({ name: user.name });
+        await db.collection("messages").insertOne({
+          from: user.name,
+          to: "Todos",
+          text: "sai da sala...",
+          type: "status",
+          time: time,
+        });
+      });
+    }
+  }, 15000);
 
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
